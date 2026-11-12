@@ -1,0 +1,6 @@
+{
+  "name": "Meet & Greet — Chennai Hyper-Local Meets & Safety",
+  "description": "Hyper-local group meetups in Chennai with refundable ₹ Escrow commitment deposits, DigiLocker KYC, rolling TOTP check-in QR, AI Liveness Pose Check, and Geofence SOS.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
