@@ -26,6 +26,20 @@ export type ActiveRoute =
 
 export type GeofenceStatus = 'safe' | 'warning' | 'breach';
 
+export type TypographyStyleVariant = 'A' | 'B' | 'C';
+
+export type VibePaletteId =
+  | 'light-blue'
+  | 'clean-white'
+  | 'golden-yellow'
+  | 'dark-pink'
+  | 'purple'
+  | 'dark-blue'
+  | 'dark-gold'
+  | 'dark-pink-neg'
+  | 'dark-purple'
+  | 'dark-emerald';
+
 export interface MeetItem {
   id: string;
   title: string;
@@ -64,9 +78,14 @@ export interface MeetItem {
   };
   joinedByUser?: boolean;
   checkedInByUser?: boolean;
+  coverPhotoUrl?: string;
   customFlyerUrl?: string;
+  typographyVariant?: TypographyStyleVariant;
   highlights: string[];
 }
+
+export type ClientMapStatusFilter = 'All' | 'Joined' | 'Hosted' | 'Missed';
+export type ProfileSubTab = 'track' | 'places' | 'friends' | 'map' | 'wallet';
 
 export interface TrackHistoryEntry {
   id: string;
@@ -74,8 +93,16 @@ export interface TrackHistoryEntry {
   timeLabel: string;
   meetTitle: string;
   venueName: string;
+  area: string;
+  category: MeetCategory;
   status: 'Joined' | 'Missed' | 'Hosted';
   escrowDelta: number; // +₹35 credit or -₹100 penalty or 0
+  coordinates: {
+    lat: number;
+    lng: number;
+    mapX: number; // 0-100 percentage on custom Chennai SVG map
+    mapY: number; // 0-100 percentage on custom Chennai SVG map
+  };
 }
 
 export interface WalletTransaction {
@@ -148,3 +175,13 @@ export interface FilterCriteria {
   genderGroup: GenderDemographic;
   onlySafeguardPlus: boolean;
 }
+
+export interface RandomMeetPreset {
+  id: string;
+  distanceKm: number;
+  priceMode: 'free' | 'paid' | 'all';
+  category: MeetCategory | 'All';
+  customLabel?: string;
+}
+
+

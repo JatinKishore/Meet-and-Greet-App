@@ -6,13 +6,27 @@
     --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    /* Default Clean Solid Theme: Light Blue (Zero Gradients) */
+    --vibe-bg: #F0F9FF;
+    --vibe-bg-elevated: #E0F2FE;
+    --vibe-card: #FFFFFF;
+    --vibe-card-muted: #F1F5F9;
+    --vibe-text: #0F172A;
+    --vibe-text-muted: #475569;
+    --vibe-accent: #0284C7;
+    --vibe-accent-secondary: #0369A1;
+    --vibe-accent-fg: #FFFFFF;
+    --vibe-border: rgba(2, 132, 199, 0.22);
+    --vibe-glow: rgba(2, 132, 199, 0.14);
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #09090B;
-    color: #FAFAFA;
+    background-color: var(--vibe-bg);
+    color: var(--vibe-text);
     overflow-x: hidden;
+    transition: background-color 0.22s ease, color 0.22s ease;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -25,40 +39,108 @@
   }
 }
 
-@keyframes ticker-scroll {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+/* Clean Solid Consumer Theme Utility Classes (Strictly No Gradients) */
+.vibe-canvas {
+  background-color: var(--vibe-bg);
+  color: var(--vibe-text);
 }
 
-.animate-ticker {
-  display: flex;
-  width: max-content;
-  animation: ticker-scroll 28s linear infinite;
+.vibe-card {
+  background-color: var(--vibe-card);
+  border-color: var(--vibe-border);
+  box-shadow: 0 12px 30px -12px var(--vibe-glow);
 }
 
-.animate-ticker:hover {
-  animation-play-state: paused;
+.vibe-card-subtle {
+  background-color: var(--vibe-card-muted);
+  border-color: var(--vibe-border);
 }
 
-/* Custom subtle scrollbars for mobile drawers & feeds */
+.vibe-cta-primary {
+  background-color: var(--vibe-accent);
+  color: var(--vibe-accent-fg);
+  box-shadow: 0 6px 18px -4px var(--vibe-glow);
+}
+
+.vibe-text-accent {
+  color: var(--vibe-accent);
+}
+
+.vibe-border-accent {
+  border-color: var(--vibe-border);
+}
+
+/* Adaptive overrides when a Light Theme is active (Light Blue, White, Golden Yellow, Dark Pink, Purple) */
+[data-vibe-light="true"] .bg-\[\#09090B\],
+[data-vibe-light="true"] .bg-\[\#09090B\]\/90,
+[data-vibe-light="true"] .bg-\[\#09090B\]\/85 {
+  background-color: var(--vibe-bg) !important;
+}
+
+[data-vibe-light="true"] .bg-\[\#121215\],
+[data-vibe-light="true"] .bg-\[\#121215\]\/90,
+[data-vibe-light="true"] .bg-\[\#121215\]\/85,
+[data-vibe-light="true"] .bg-\[\#121215\]\/80,
+[data-vibe-light="true"] .bg-zinc-900,
+[data-vibe-light="true"] .bg-zinc-900\/90,
+[data-vibe-light="true"] .bg-zinc-900\/80,
+[data-vibe-light="true"] .bg-zinc-900\/60 {
+  background-color: var(--vibe-card) !important;
+  border-color: var(--vibe-border) !important;
+}
+
+[data-vibe-light="true"] .bg-white\/\[0\.03\],
+[data-vibe-light="true"] .bg-white\/\[0\.04\],
+[data-vibe-light="true"] .bg-white\/\[0\.02\] {
+  background-color: var(--vibe-card-muted) !important;
+  border-color: var(--vibe-border) !important;
+}
+
+[data-vibe-light="true"] .text-white:not(.hero-photo-text),
+[data-vibe-light="true"] .text-zinc-50:not(.hero-photo-text),
+[data-vibe-light="true"] .text-zinc-100:not(.hero-photo-text),
+[data-vibe-light="true"] .text-zinc-200:not(.hero-photo-text) {
+  color: var(--vibe-text) !important;
+}
+
+[data-vibe-light="true"] .text-zinc-300:not(.hero-photo-text),
+[data-vibe-light="true"] .text-zinc-400:not(.hero-photo-text),
+[data-vibe-light="true"] .text-zinc-500:not(.hero-photo-text) {
+  color: var(--vibe-text-muted) !important;
+}
+
+[data-vibe-light="true"] .border-white\/10,
+[data-vibe-light="true"] .border-white\/15,
+[data-vibe-light="true"] .border-white\/\[0\.08\],
+[data-vibe-light="true"] .border-white\/\[0\.06\] {
+  border-color: var(--vibe-border) !important;
+}
+
+/* Adaptive overrides for Dark Negative Themes */
+[data-vibe-light="false"] .bg-\[\#09090B\],
+[data-vibe-light="false"] .bg-\[\#09090B\]\/90,
+[data-vibe-light="false"] .bg-\[\#09090B\]\/85 {
+  background-color: var(--vibe-bg) !important;
+}
+
+[data-vibe-light="false"] .bg-\[\#121215\],
+[data-vibe-light="false"] .bg-\[\#121215\]\/90,
+[data-vibe-light="false"] .bg-\[\#121215\]\/85,
+[data-vibe-light="false"] .bg-\[\#121215\]\/80 {
+  background-color: var(--vibe-card) !important;
+}
+
+/* Custom subtle scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(9, 9, 11, 0.6);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--vibe-border);
   border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
 }

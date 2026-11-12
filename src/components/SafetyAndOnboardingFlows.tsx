@@ -15,7 +15,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useMeet } from '../context/MeetContext';
-import { generateRollingTotpCode } from '../utils/meetLogic';
+import { generateRollingTotpCode, getEventCtaCopy } from '../utils/meetLogic';
 
 /* -------------------------------------------------------------------------- */
 /* 1. DigiLocker KYC & Parental Consent Wizard (/onboarding/kyc & /guardian)  */
@@ -336,7 +336,7 @@ export const KycAndGuardianFlow: React.FC = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* 2. Razorpay-Style ₹ Escrow Checkout (/meet/checkout)                       */
+/* 2. Consumer Event Pass Checkout (/meet/checkout)                           */
 /* -------------------------------------------------------------------------- */
 export const EscrowCheckoutFlow: React.FC = () => {
   const { selectedMeet, setRoute, completeEscrowCheckout, user } = useMeet();
@@ -345,6 +345,7 @@ export const EscrowCheckoutFlow: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const amount = selectedMeet.escrowAmount || 100;
+  const ctaCopy = getEventCtaCopy(selectedMeet);
 
   const handleLockPayment = () => {
     setIsProcessing(true);
@@ -355,31 +356,31 @@ export const EscrowCheckoutFlow: React.FC = () => {
   };
 
   return (
-    <div className="px-3.5 pb-10 space-y-4">
-      <div className="pt-2 flex items-center justify-between">
+    <div className="px-5 pb-10 space-y-4">
+      <div className="pt-3 flex items-center justify-between">
         <button
           type="button"
           onClick={() => setRoute('/home')}
-          className="min-h-[44px] px-3 rounded-xl bg-[#121215] border border-white/10 text-xs font-medium text-zinc-200 inline-flex items-center gap-2"
+          className="min-h-[44px] px-4 rounded-full vibe-card backdrop-blur-xl border text-xs font-bold text-zinc-200 inline-flex items-center gap-2"
         >
-          <ArrowLeft className="w-4 h-4 text-emerald-400" />
-          Cancel Checkout
+          <ArrowLeft className="w-4 h-4 vibe-text-accent" />
+          Back to Feed
         </button>
-        <span className="font-mono text-xs text-amber-300 flex items-center gap-1">
+        <span className="font-mono text-xs vibe-text-accent font-bold flex items-center gap-1">
           <Lock className="w-3.5 h-3.5" />
-          Razorpay Escrow Vault
+          100% Instant Venue Cashback
         </span>
       </div>
 
-      {/* Razorpay-Style Checkout Card */}
-      <div className="rounded-3xl bg-[#121215] border border-white/15 overflow-hidden shadow-2xl">
-        {/* Top Merchant Banner */}
-        <div className="bg-gradient-to-r from-emerald-950 via-zinc-900 to-zinc-900 p-5 border-b border-white/10 flex items-center justify-between">
+      {/* Consumer Event Pass Card */}
+      <div className="rounded-3xl vibe-card backdrop-blur-xl border overflow-hidden shadow-2xl">
+        {/* Top Banner */}
+        <div className="vibe-card-subtle p-5 border-b border-white/10 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-mono text-emerald-400">
-              MEET &amp; GREET ESCROW TRUST
+            <span className="text-[11px] font-display font-extrabold vibe-text-accent uppercase tracking-wider">
+              RESERVE YOUR PASS · ZERO FLAKES
             </span>
-            <h1 className="font-display font-bold text-lg text-white mt-0.5">
+            <h1 className="font-display font-extrabold text-lg text-white mt-0.5">
               {selectedMeet.title}
             </h1>
             <p className="text-xs text-zinc-400">
@@ -387,30 +388,30 @@ export const EscrowCheckoutFlow: React.FC = () => {
             </p>
           </div>
           <div className="text-right">
-            <div className="font-mono font-extrabold text-2xl text-amber-300">
+            <div className="font-mono font-extrabold text-2xl vibe-text-accent">
               ₹{amount}
             </div>
-            <div className="text-[10px] text-emerald-300">100% Refundable</div>
+            <div className="text-[10px] font-bold text-emerald-500">100% Back at Venue</div>
           </div>
         </div>
 
         <div className="p-5 space-y-4">
-          {/* How Escrow Works */}
-          <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-1.5 text-xs text-zinc-300">
-            <div className="font-semibold text-white flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Zero-Flake Escrow Guarantee
+          {/* How Your Refundable Pass Works */}
+          <div className="p-4 rounded-3xl vibe-card-subtle border space-y-1.5 text-xs text-zinc-300">
+            <div className="font-bold text-white flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 vibe-text-accent" />
+              How Your Refundable Pass Works
             </div>
             <p className="text-zinc-400 leading-relaxed">
-              Your <strong className="text-white font-mono">₹{amount}</strong> is held in neutral escrow—not paid to the host. When you arrive at{' '}
-              <strong className="text-white">{selectedMeet.venueName}</strong> and scan the host’s rolling 30-second QR code, <strong className="text-emerald-400">100% is refunded immediately</strong>.
+              Your <strong className="text-white font-mono">₹{amount}</strong> pass isn&apos;t a ticket fee—it simply reserves your spot! The second you arrive at{' '}
+              <strong className="text-white">{selectedMeet.venueName}</strong> and scan the host’s Pass, <strong className="text-emerald-500">100% comes right back to your UPI</strong>.
             </p>
           </div>
 
           {/* Payment Method Selector */}
           <div className="space-y-2">
-            <span className="text-xs font-semibold text-zinc-200 block">
-              Select Payment Method
+            <span className="text-xs font-bold text-zinc-200 block">
+              Pick Your Payment Method
             </span>
             {(
               [
@@ -425,15 +426,15 @@ export const EscrowCheckoutFlow: React.FC = () => {
                 onClick={() => setPaymentMethod(method)}
                 className={`w-full min-h-[48px] px-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
                   paymentMethod === method
-                    ? 'bg-emerald-500/15 border-emerald-500 text-white'
-                    : 'bg-zinc-900 border-white/10 text-zinc-300'
+                    ? 'vibe-cta-primary border-transparent'
+                    : 'vibe-card-subtle text-zinc-300'
                 }`}
               >
-                <div className="flex items-center gap-2.5 text-xs font-semibold">
-                  <CreditCard className="w-4 h-4 text-emerald-400" />
+                <div className="flex items-center gap-2.5 text-xs font-bold">
+                  <CreditCard className="w-4 h-4" />
                   <span>{method}</span>
                 </div>
-                <span className="font-mono text-xs text-zinc-400">
+                <span className="font-mono text-xs opacity-85">
                   {method === 'Wallet Credit' ? `Bal: ₹${user.walletBalance}` : 'Instant'}
                 </span>
               </button>
@@ -443,13 +444,13 @@ export const EscrowCheckoutFlow: React.FC = () => {
           {paymentMethod === 'UPI (GPay / PhonePe)' && (
             <label className="block">
               <span className="text-xs text-zinc-400 block mb-1">
-                Verified UPI ID for Auto-Refund
+                UPI ID for Instant Venue Cashback
               </span>
               <input
                 type="text"
                 value={upiVpa}
                 onChange={(e) => setUpiVpa(e.target.value)}
-                className="w-full min-h-[44px] px-3.5 rounded-xl bg-zinc-900 border border-white/15 font-mono text-xs text-white"
+                className="w-full min-h-[44px] px-4 rounded-2xl bg-zinc-900 border border-white/15 font-mono text-xs text-white"
               />
             </label>
           )}
@@ -458,17 +459,17 @@ export const EscrowCheckoutFlow: React.FC = () => {
             type="button"
             onClick={handleLockPayment}
             disabled={isProcessing}
-            className="w-full min-h-[50px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+            className="w-full min-h-[52px] rounded-full vibe-cta-primary font-display font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
           >
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Locking ₹{amount} in Razorpay Escrow...
+                Reserving your spot...
               </>
             ) : (
               <>
                 <Lock className="w-4 h-4" />
-                Pay &amp; Lock ₹{amount} Refundable Escrow
+                {ctaCopy.checkoutCta}
               </>
             )}
           </button>
@@ -479,15 +480,32 @@ export const EscrowCheckoutFlow: React.FC = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* 3. Active Event & Rolling 30-Second TOTP QR (/meet/active)                 */
+/* 3. Active Event & Role-Based Check-In (/meet/active)                       */
+/*    - Client-Created Meets (Host) -> ONLY Host Pass Rolling QR              */
+/*    - Other Meets (Attendee)      -> ONLY Attendee Pass Scanner             */
 /* -------------------------------------------------------------------------- */
 export const ActiveMeetQrFlow: React.FC = () => {
-  const { selectedMeet, setRoute, completeQrCheckIn } = useMeet();
-  const [mode, setMode] = useState<'host-qr' | 'attendee-scanner'>('host-qr');
+  const {
+    user,
+    meets,
+    selectedMeet,
+    setSelectedMeetId,
+    setRoute,
+    completeQrCheckIn,
+    showToast,
+  } = useMeet();
+
   const [secondsLeft, setSecondsLeft] = useState<number>(30);
   const [epochWindow, setEpochWindow] = useState<number>(() =>
     Math.floor(Date.now() / 30000)
   );
+  const [hostVerifiedCount, setHostVerifiedCount] = useState<number>(
+    selectedMeet.occupiedSpots
+  );
+
+  useEffect(() => {
+    setHostVerifiedCount(selectedMeet.occupiedSpots);
+  }, [selectedMeet.id, selectedMeet.occupiedSpots]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -499,68 +517,129 @@ export const ActiveMeetQrFlow: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const isHost = selectedMeet.hostUid === user.uid;
   const totpCode = generateRollingTotpCode(selectedMeet.id, epochWindow);
 
+  // Quick selector pills so the user can inspect their Hosted meet vs their Attendee meets
+  const hostedMeets = meets.filter((m) => m.hostUid === user.uid);
+  const attendeeMeets = meets.filter((m) => m.hostUid !== user.uid);
+
+  const handleSimulateAttendeeScanOnHostQr = () => {
+    const nextCount = Math.min(selectedMeet.maxSpots, hostVerifiedCount + 1);
+    setHostVerifiedCount(nextCount);
+    showToast(
+      'Squad Member Scanned Your Host Pass!',
+      `Verified Pass #${totpCode} at ${selectedMeet.venueName} (${nextCount}/${selectedMeet.maxSpots} checked in).`,
+      'emerald'
+    );
+  };
+
   return (
-    <div className="px-3.5 pb-10 space-y-4">
-      <div className="pt-2 flex items-center justify-between">
+    <div className="px-5 pb-12 space-y-5">
+      <div className="pt-4 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setRoute('/home')}
-          className="min-h-[44px] px-3 rounded-xl bg-[#121215] border border-white/10 text-xs font-medium text-zinc-200 inline-flex items-center gap-2"
+          className="min-h-[44px] px-4 rounded-full vibe-card backdrop-blur-xl border text-xs font-bold text-zinc-200 inline-flex items-center gap-2 transition-transform active:scale-95"
         >
-          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+          <ArrowLeft className="w-4 h-4 vibe-text-accent" />
           Back to Feed
         </button>
-        <span className="font-mono text-xs text-emerald-400">
-          Geofence Active: {selectedMeet.geofenceRadiusMeters}m
+        <span className="font-mono text-xs font-bold vibe-text-accent">
+          Safe-Zone Active: {selectedMeet.geofenceRadiusMeters}m
         </span>
       </div>
 
-      {/* Mode Switch: Host Rolling QR vs Attendee QR Scanner */}
-      <div className="grid grid-cols-2 gap-1.5 bg-[#121215] p-1.5 rounded-2xl border border-white/10">
-        <button
-          type="button"
-          onClick={() => setMode('host-qr')}
-          className={`min-h-[42px] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-            mode === 'host-qr'
-              ? 'bg-emerald-500 text-zinc-950'
-              : 'text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          <QrCode className="w-4 h-4" />
-          Host Rolling QR
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('attendee-scanner')}
-          className={`min-h-[42px] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-            mode === 'attendee-scanner'
-              ? 'bg-emerald-500 text-zinc-950'
-              : 'text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          <ScanLine className="w-4 h-4" />
-          Attendee Scanner
-        </button>
+      {/* Active Meet Role Switcher: Compare a Meet You Host (Host Pass) vs Meets You Join (Attendee Scanner) */}
+      <div className="rounded-3xl vibe-card backdrop-blur-xl border p-4 space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold text-zinc-200">
+            Switch Hangout Pass
+          </span>
+          <span className="text-[11px] text-zinc-400">
+            Hosts flash Pass · Squad scans Pass
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {hostedMeets[0] && (
+            <button
+              type="button"
+              onClick={() => setSelectedMeetId(hostedMeets[0].id)}
+              className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${
+                selectedMeet.id === hostedMeets[0].id
+                  ? 'vibe-cta-primary border-transparent'
+                  : 'vibe-card-subtle text-zinc-300 hover:opacity-90'
+              }`}
+            >
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono font-bold uppercase opacity-90">
+                  ★ Hosted by You (Host Pass)
+                </div>
+                <div className="text-xs font-extrabold truncate">
+                  {hostedMeets[0].title}
+                </div>
+              </div>
+              <QrCode className="w-4 h-4 shrink-0" />
+            </button>
+          )}
+
+          {attendeeMeets[0] && (
+            <button
+              type="button"
+              onClick={() => setSelectedMeetId(attendeeMeets[3]?.id || attendeeMeets[0].id)}
+              className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition-all ${
+                !isHost
+                  ? 'vibe-cta-primary border-transparent'
+                  : 'vibe-card-subtle text-zinc-300 hover:opacity-90'
+              }`}
+            >
+              <div className="min-w-0">
+                <div className="text-[10px] font-mono font-bold uppercase opacity-90">
+                  ✓ Squad Member (Scan Pass)
+                </div>
+                <div className="text-xs font-extrabold truncate">
+                  {!isHost ? selectedMeet.title : (attendeeMeets[3]?.title || attendeeMeets[0].title)}
+                </div>
+              </div>
+              <ScanLine className="w-4 h-4 shrink-0" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Card */}
-      <div className="rounded-3xl bg-[#121215] border border-white/10 p-5 space-y-4 text-center">
-        <div>
-          <span className="text-xs font-medium text-emerald-400">
-            {selectedMeet.venueName}
-          </span>
-          <h1 className="font-display font-bold text-lg text-white mt-0.5">
+      {/* Main Role-Specific Check-In Card */}
+      <div className="rounded-3xl vibe-card backdrop-blur-xl border p-6 space-y-5 text-center">
+        {/* Role Header Badge */}
+        <div className="flex flex-col items-center gap-1.5 pb-4 border-b border-white/10">
+          {isHost ? (
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full vibe-cta-primary font-display text-xs font-extrabold">
+              <QrCode className="w-3.5 h-3.5" />
+              YOUR LIVE HOST PASS · FLASH TO SQUAD
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full vibe-cta-primary font-display text-xs font-extrabold">
+              <ScanLine className="w-3.5 h-3.5" />
+              SHOW PASS TO HOST: {selectedMeet.hostName.toUpperCase()}
+            </span>
+          )}
+
+          <h1 className="font-display font-extrabold text-lg tracking-tight text-white mt-1">
             {selectedMeet.title}
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Anti-screenshot cryptographic TOTP rotates every 30 seconds
+          <p className="text-xs text-zinc-400">
+            {selectedMeet.venueName} · {selectedMeet.dateTimeLabel}
           </p>
         </div>
 
-        {mode === 'host-qr' ? (
+        {/* STRICT ROLE VIEW: Host sees ONLY Rolling Pass QR; Attendee sees ONLY Pass Scanner */}
+        {isHost ? (
           <div className="space-y-4">
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Flash this live 30-second Host Pass to squad members arriving at{' '}
+              <strong className="text-white">{selectedMeet.venueName}</strong> so they can check in and unlock their instant cashback!
+            </p>
+
             {/* Dynamic SVG QR Matrix seeded by totpCode */}
             <div className="w-52 h-52 mx-auto p-4 rounded-3xl bg-white text-zinc-950 shadow-xl flex flex-col items-center justify-center relative">
               <svg viewBox="0 0 100 100" className="w-full h-full">
@@ -596,62 +675,91 @@ export const ActiveMeetQrFlow: React.FC = () => {
             </div>
 
             {/* Live 30s Countdown Ring & TOTP Token */}
-            <div className="p-3.5 rounded-2xl bg-zinc-900/90 border border-white/10 flex items-center justify-between">
+            <div className="p-4 rounded-3xl vibe-card-subtle border flex items-center justify-between">
               <div className="text-left">
                 <span className="text-[11px] text-zinc-400 block">
-                  Rolling 6-Digit Check-In Token
+                  Live 6-Digit Host Pin
                 </span>
-                <span className="font-mono font-extrabold text-xl tracking-widest text-emerald-400">
+                <span className="font-mono font-extrabold text-xl tracking-widest vibe-text-accent">
                   {totpCode.slice(0, 3)} {totpCode.slice(3)}
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-[11px] text-zinc-400 block">Rotates in</span>
-                <span className="font-mono font-bold text-base text-amber-300 inline-flex items-center gap-1">
+                <span className="text-[11px] text-zinc-400 block">Refreshes in</span>
+                <span className="font-mono font-bold text-base text-emerald-500 inline-flex items-center gap-1">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   {secondsLeft}s
                 </span>
               </div>
             </div>
+
+            {/* Host Action: Simulate an attendee scanning the host's QR */}
+            <div className="pt-2 border-t border-white/10 space-y-2.5">
+              <div className="flex items-center justify-between text-xs text-zinc-300 px-1">
+                <span>Squad Checked In with Your Pass:</span>
+                <strong className="font-mono vibe-text-accent">
+                  {hostVerifiedCount} / {selectedMeet.maxSpots}
+                </strong>
+              </div>
+              <button
+                type="button"
+                onClick={handleSimulateAttendeeScanOnHostQr}
+                className="w-full min-h-[50px] rounded-full vibe-cta-primary font-display font-extrabold text-xs flex items-center justify-center gap-2 transition-transform active:scale-95"
+              >
+                <QrCode className="w-4 h-4" />
+                Simulate Squad Member Scanning Your Pass
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="h-52 rounded-3xl bg-zinc-950 border-2 border-emerald-500/50 relative overflow-hidden flex flex-col items-center justify-center p-4">
-              <ScanLine className="w-12 h-12 text-emerald-400 animate-pulse mb-2" />
-              <p className="text-xs font-semibold text-zinc-100">
-                Align Host’s Rolling QR inside Frame
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              You&apos;re in the squad! Point your camera at host{' '}
+              <strong className="text-white">{selectedMeet.hostName}&apos;s</strong> Live Pass at the venue to check in and claim your instant cashback.
+            </p>
+
+            {/* Attendee Camera Scanner Viewfinder Only */}
+            <div className="h-56 rounded-3xl bg-zinc-950 border-2 border-dashed border-emerald-500/60 relative overflow-hidden flex flex-col items-center justify-center p-5">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center mb-3">
+                <ScanLine className="w-9 h-9 text-emerald-400 animate-pulse" />
+              </div>
+              <p className="hero-photo-text text-xs font-bold text-white">
+                Scan {selectedMeet.hostName}&apos;s Host Pass
               </p>
-              <p className="text-[11px] text-zinc-400 font-mono mt-1">
-                Detected Token: {totpCode} @ {selectedMeet.venueName}
+              <p className="hero-photo-text text-[11px] text-zinc-400 font-mono mt-1">
+                Camera Scanner Ready @ {selectedMeet.venueName}
               </p>
+              <span className="hero-photo-text mt-2.5 px-3 py-0.5 rounded-full bg-white/10 border border-white/15 font-mono text-[10px] text-emerald-300">
+                Only the hangout creator displays the Pass QR
+              </span>
+            </div>
+
+            {/* Attendee Action: Scan & Verify Check-In */}
+            <div className="pt-2 border-t border-white/10 space-y-2.5">
+              <button
+                type="button"
+                onClick={() => completeQrCheckIn(selectedMeet.id)}
+                className="w-full min-h-[50px] rounded-full vibe-cta-primary font-display font-extrabold text-xs flex items-center justify-center gap-2 transition-transform active:scale-95"
+              >
+                <ScanLine className="w-4 h-4" />
+                {selectedMeet.checkedInByUser
+                  ? 'You’re Checked In! · Cashback Sent'
+                  : selectedMeet.escrowAmount > 0
+                  ? `Scan Host Pass & Claim ₹${selectedMeet.escrowAmount} Back`
+                  : 'Scan Host Pass to Check In'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRoute('/meet/verify-pose')}
+                className="w-full min-h-[46px] rounded-full vibe-card-subtle border text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                Snap Late-Night Fun Pose Check
+              </button>
             </div>
           </div>
         )}
-
-        {/* Simulate Check-In & Escrow Release Button */}
-        <div className="space-y-2 pt-1">
-          <button
-            type="button"
-            onClick={() => completeQrCheckIn(selectedMeet.id)}
-            className="w-full min-h-[48px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            {selectedMeet.checkedInByUser
-              ? 'Checked In · Escrow Already Refunded'
-              : selectedMeet.escrowAmount > 0
-              ? `Verify Check-In & Refund ₹${selectedMeet.escrowAmount} Escrow`
-              : 'Verify Attendance via Rolling QR'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setRoute('/meet/verify-pose')}
-            className="w-full min-h-[42px] rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-xs font-semibold text-amber-300 flex items-center justify-center gap-1.5"
-          >
-            <Camera className="w-3.5 h-3.5" />
-            Trigger Late-Night Fun Pose Check
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -13,8 +13,12 @@ import {
   Camera,
   QrCode,
   ChevronRight,
+  Palette,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useMeet } from '../context/MeetContext';
+import { VIBE_PALETTES } from '../data/vibePalettes';
 
 export const SidebarDrawer: React.FC = () => {
   const {
@@ -25,13 +29,22 @@ export const SidebarDrawer: React.FC = () => {
     setIsFilterOpen,
     setFeedTab,
     setIsCreateModalOpen,
-    setIsRandomModalOpen,
+    setIsRandomPresetsModalOpen,
+    randomPresets,
+    vibePaletteId,
+    setVibePaletteId,
+    activeVibePalette,
+    setIsVibeModalOpen,
+    showToast,
   } = useMeet();
+
+  const lightThemes = VIBE_PALETTES.filter((p) => p.isLightMode);
+  const darkThemes = VIBE_PALETTES.filter((p) => !p.isLightMode);
 
   const drawerItems = [
     {
       id: 'profile',
-      label: 'Profile',
+      label: 'Profile & Settings',
       subtitle: `${user.name} · UID: ${user.uid}`,
       icon: User,
       onClick: () => {
@@ -63,7 +76,7 @@ export const SidebarDrawer: React.FC = () => {
     {
       id: 'upcoming',
       label: 'Upcoming Meets',
-      subtitle: 'Your joined & escrow-locked meets',
+      subtitle: 'Your booked & active event passes',
       icon: CalendarClock,
       onClick: () => {
         setFeedTab('upcoming');
@@ -73,8 +86,8 @@ export const SidebarDrawer: React.FC = () => {
     },
     {
       id: 'create',
-      label: 'Create Meet',
-      subtitle: 'Host a meet + AI Flyer & Venue Grounding',
+      label: 'Create Meet (H+st)',
+      subtitle: 'Host a meet + Date/Time & Typography',
       icon: PlusCircle,
       onClick: () => {
         setIsSidebarOpen(false);
@@ -82,13 +95,13 @@ export const SidebarDrawer: React.FC = () => {
       },
     },
     {
-      id: 'random',
-      label: 'Random Meet',
-      subtitle: 'Roll the dice for a spontaneous match',
+      id: 'random-presets',
+      label: 'Random Meet Presets',
+      subtitle: `${randomPresets.length} active presets · Add endless presets`,
       icon: Dices,
       onClick: () => {
         setIsSidebarOpen(false);
-        setIsRandomModalOpen(true);
+        setIsRandomPresetsModalOpen(true);
       },
     },
     {
@@ -116,7 +129,7 @@ export const SidebarDrawer: React.FC = () => {
     },
     {
       id: 'active-qr',
-      label: 'Active Meet & Rolling TOTP QR',
+      label: 'Active Meet & Rolling TOTP Pass',
       icon: QrCode,
       onClick: () => {
         setIsSidebarOpen(false);
@@ -152,7 +165,7 @@ export const SidebarDrawer: React.FC = () => {
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             aria-label="Meet & Greet Sidebar Menu"
-            className="relative z-10 w-full max-w-xs bg-[#121215] border-l border-white/10 h-full flex flex-col justify-between overflow-y-auto p-5"
+            className="relative z-10 w-full max-w-xs vibe-card border-l h-full flex flex-col justify-between overflow-y-auto p-5 shadow-2xl"
           >
             <div>
               {/* Drawer Header */}
@@ -169,13 +182,119 @@ export const SidebarDrawer: React.FC = () => {
                   type="button"
                   onClick={() => setIsSidebarOpen(false)}
                   aria-label="Close Sidebar Menu"
-                  className="min-h-[44px] min-w-[44px] rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white"
+                  className="min-h-[44px] min-w-[44px] rounded-xl vibe-card-subtle border flex items-center justify-center text-zinc-300 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Doodle Menu List (Profile, Filter, Available Meets, Upcoming Meets, Create Meet, Random Meet, Sponsor Ads) */}
+              {/* Color Theme Switcher (Light & Dark Solid Themes inside Menu) */}
+              <div className="mt-4 p-3.5 rounded-2xl vibe-card-subtle border space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 vibe-text-accent" />
+                    <span className="text-xs font-extrabold text-white">
+                      Color Theme
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      setIsVibeModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-full vibe-cta-primary text-[10px] font-bold"
+                  >
+                    All {VIBE_PALETTES.length} Themes
+                  </button>
+                </div>
+
+                {/* Light Themes Row */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400">
+                    <Sun className="w-3 h-3" />
+                    <span>Light Theme (Solid)</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {lightThemes.map((t) => {
+                      const active = t.id === vibePaletteId;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            setVibePaletteId(t.id);
+                            showToast(
+                              `${t.emoji} ${t.name} Theme`,
+                              t.pairLabel,
+                              'emerald'
+                            );
+                          }}
+                          title={t.name}
+                          className={`min-h-[34px] rounded-xl border flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold transition-transform ${
+                            active
+                              ? 'ring-2 ring-offset-1 scale-105'
+                              : 'opacity-85 hover:opacity-100'
+                          }`}
+                          style={{
+                            backgroundColor: t.cssVars['--vibe-accent'],
+                            color: t.cssVars['--vibe-accent-fg'],
+                            borderColor: t.cssVars['--vibe-border'],
+                          }}
+                        >
+                          <span>{t.emoji}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Dark Negative Themes Row */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400">
+                    <Moon className="w-3 h-3" />
+                    <span>Dark Theme (Negative + Light Shade)</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {darkThemes.map((t) => {
+                      const active = t.id === vibePaletteId;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            setVibePaletteId(t.id);
+                            showToast(
+                              `${t.emoji} ${t.name} Theme`,
+                              t.pairLabel,
+                              'emerald'
+                            );
+                          }}
+                          title={t.name}
+                          className={`min-h-[34px] rounded-xl border flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold transition-transform ${
+                            active
+                              ? 'ring-2 ring-offset-1 scale-105'
+                              : 'opacity-85 hover:opacity-100'
+                          }`}
+                          style={{
+                            backgroundColor: t.cssVars['--vibe-bg'],
+                            color: t.cssVars['--vibe-accent'],
+                            borderColor: t.cssVars['--vibe-accent'],
+                          }}
+                        >
+                          <span>{t.emoji}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-zinc-400 truncate">
+                  Active: <strong className="text-white">{activeVibePalette.name}</strong>
+                </div>
+              </div>
+
+              {/* Doodle Menu List */}
               <div className="mt-4 space-y-1">
                 <p className="text-[11px] font-medium text-zinc-400 px-2 mb-1.5">
                   Navigation Menu
@@ -187,14 +306,14 @@ export const SidebarDrawer: React.FC = () => {
                       key={item.id}
                       type="button"
                       onClick={item.onClick}
-                      className="w-full min-h-[52px] px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center justify-between text-left transition-colors group"
+                      className="w-full min-h-[50px] px-3 py-2 rounded-xl hover:bg-white/5 flex items-center justify-between text-left transition-colors group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/40 shrink-0">
+                        <div className="w-9 h-9 rounded-xl vibe-card-subtle border flex items-center justify-center vibe-text-accent shrink-0">
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-zinc-100 group-hover:text-emerald-300 truncate">
+                          <div className="text-sm font-semibold text-zinc-100 truncate">
                             {item.label}
                           </div>
                           <div className="text-[11px] text-zinc-400 truncate">
@@ -202,15 +321,15 @@ export const SidebarDrawer: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
                     </button>
                   );
                 })}
               </div>
 
               {/* Safety & Verification Quick Access */}
-              <div className="mt-6 pt-4 border-t border-white/10 space-y-1">
-                <p className="text-[11px] font-medium text-emerald-400 px-2 mb-1.5">
+              <div className="mt-5 pt-4 border-t border-white/10 space-y-1">
+                <p className="text-[11px] font-medium vibe-text-accent px-2 mb-1.5">
                   Safeguard+ &amp; Verification Flows
                 </p>
                 {safetyFlows.map((flow) => {
@@ -220,11 +339,11 @@ export const SidebarDrawer: React.FC = () => {
                       key={flow.id}
                       type="button"
                       onClick={flow.onClick}
-                      className="w-full min-h-[44px] px-3 py-2 rounded-xl hover:bg-emerald-500/10 flex items-center justify-between text-left transition-colors group"
+                      className="w-full min-h-[42px] px-3 py-2 rounded-xl hover:bg-white/5 flex items-center justify-between text-left transition-colors group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <Icon className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs font-medium text-zinc-200 group-hover:text-emerald-200">
+                        <Icon className="w-4 h-4 vibe-text-accent" />
+                        <span className="text-xs font-medium text-zinc-200">
                           {flow.label}
                         </span>
                       </div>
@@ -237,8 +356,8 @@ export const SidebarDrawer: React.FC = () => {
 
             {/* Footer User Summary */}
             <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-zinc-400">
-              <span>Escrow Wallet:</span>
-              <span className="font-mono font-bold text-emerald-400">
+              <span>No-Flake Cashback Wallet:</span>
+              <span className="font-mono font-bold vibe-text-accent">
                 ₹{user.walletBalance}
               </span>
             </div>

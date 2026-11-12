@@ -5,10 +5,27 @@ import {
   calculateOccupancyPercent,
   calculateReliabilityScore,
   countActiveFilters,
+  DEFAULT_RANDOM_PRESETS,
+  filterClientHistoryByStatus,
   filterMeets,
+  formatHostDateTimeLabel,
+  formatPresetLabel,
   generateRollingTotpCode,
+  getEventCtaCopy,
+  getMeetCheckInMode,
+  getNextBookedMeet,
+  getRemainingTimeUrgency,
+  isMeetHostedByUser,
+  pickRandomMeetByPreset,
+  summarizeClientMapStats,
 } from './meetLogic';
-import { FilterCriteria, MeetItem } from '../types/meet';
+import { VIBE_PALETTES, getVibePaletteById } from '../data/vibePalettes';
+import {
+  CATEGORY_TYPOGRAPHY_MAP,
+  resolveMeetTypography,
+  getNextTypographyVariant,
+} from './typographyStyles';
+import { FilterCriteria, MeetCategory, MeetItem, TrackHistoryEntry } from '../types/meet';
 
 const SAMPLE_MEETS: MeetItem[] = [
   {
@@ -140,3 +157,189 @@ test('countActiveFilters counts non-default filter selections', () => {
     4
   );
 });
+
+test('filterClientHistoryByStatus and summarizeClientMapStats handle client previous meets map data', () => {
+  const sampleHistory: TrackHistoryEntry[] = [
+    {
+      id: 'h1',
+      dateLabel: '25-08-26',
+      timeLabel: '6:00pm',
+      meetTitle: 'Cricket Meet',
+      venueName: 'Nehru Stadium',
+      area: 'Park Town',
+      category: 'Playground',
+      status: 'Joined',
+      escrowDelta: 45,
+      coordinates: { lat: 13.0865, lng: 80.2728, mapX: 62, mapY: 22 },
+    },
+    {
+      id: 'h2',
+      dateLabel: '21-08-26',
+      timeLabel: '6:00pm',
+      meetTitle: 'Turf Box Cricket',
+      venueName: 'Nehru Stadium Gate 3',
+      area: 'Periyamet',
+      category: 'Playground',
+      status: 'Missed',
+      escrowDelta: -100,
+      coordinates: { lat: 13.084, lng: 80.275, mapX: 74, mapY: 33 },
+    },
+    {
+      id: 'h3',
+      dateLabel: '18-08-26',
+      timeLabel: '5:30pm',
+      meetTitle: 'codeClubs Meet',
+      venueName: 'Anna Nagar Tower Park',
+      area: 'Anna Nagar',
+      category: 'Community',
+      status: 'Hosted',
+      escrowDelta: 90,
+      coordinates: { lat: 13.085, lng: 80.2101, mapX: 36, mapY: 28 },
+    },
+  ];
+
+  assert.equal(filterClientHistoryByStatus(sampleHistory, 'All').length, 3);
+  assert.equal(filterClientHistoryByStatus(sampleHistory, 'Joined').length, 1);
+  assert.equal(filterClientHistoryByStatus(sampleHistory, 'Hosted').length, 1);
+  assert.equal(filterClientHistoryByStatus(sampleHistory, 'Missed').length, 1);
+
+  const summary = summarizeClientMapStats(sampleHistory);
+  assert.equal(summary.total, 3);
+  assert.equal(summary.joined, 1);
+  assert.equal(summary.hosted, 1);
+  assert.equal(summary.missed, 1);
+  assert.equal(summary.netEscrowDelta, 35);
+});
+
+test('getRemainingTimeUrgency returns green, yellow, and red colors based on close timer', () => {
+  assert.equal(getRemainingTimeUrgency(28).level, 'green');
+  assert.equal(getRemainingTimeUrgency(14).level, 'yellow');
+  assert.equal(getRemainingTimeUrgency(5).level, 'red');
+
+  const bookedList: MeetItem[] = [
+    SAMPLE_MEETS[0],
+    { ...SAMPLE_MEETS[1], joinedByUser: true },
+  ];
+  assert.equal(getNextBookedMeet(bookedList).id, 'meet-2');
+});
+
+test('getMeetCheckInMode returns host-qr only for meets created by the user and attendee-scanner for other meets', () => {
+  const clientHostedMeet: MeetItem = { ...SAMPLE_MEETS[0], hostUid: '0001' };
+  const otherHostMeet: MeetItem = { ...SAMPLE_MEETS[1], hostUid: '0042' };
+
+  assert.equal(isMeetHostedByUser(clientHostedMeet, '0001'), true);
+  assert.equal(getMeetCheckInMode(clientHostedMeet, '0001'), 'host-qr');
+
+  assert.equal(isMeetHostedByUser(otherHostMeet, '0001'), false);
+  assert.equal(getMeetCheckInMode(otherHostMeet, '0001'), 'attendee-scanner');
+});
+
+test('VIBE_PALETTES contains all 10 clean solid Light & Dark themes with zero gradients', () => {
+  assert.equal(VIBE_PALETTES.length, 10);
+  const ids = VIBE_PALETTES.map((p) => p.id);
+  assert.deepEqual(ids, [
+    'light-blue',
+    'clean-white',
+    'golden-yellow',
+    'dark-pink',
+    'purple',
+    'dark-blue',
+    'dark-gold',
+    'dark-pink-neg',
+    'dark-purple',
+    'dark-emerald',
+  ]);
+  const lightBlue = getVibePaletteById('light-blue');
+  assert.equal(lightBlue.name, 'Light Blue');
+  assert.equal(lightBlue.isLightMode, true);
+  const darkGold = getVibePaletteById('dark-gold');
+  assert.equal(darkGold.name, 'Dark Negative · Golden');
+  assert.equal(darkGold.isLightMode, false);
+});
+
+test('CATEGORY_TYPOGRAPHY_MAP defines 3 curated typographic variants (A, B, C) for all 10 categories', () => {
+  const categories: MeetCategory[] = [
+    'Playground',
+    'Shopping',
+    'Community',
+    'Food',
+    'Contest',
+    'Tour',
+    'Couple',
+    'Study',
+    'Party',
+    'Tech',
+  ];
+  for (const cat of categories) {
+    const info = CATEGORY_TYPOGRAPHY_MAP[cat];
+    assert.ok(info, `Missing category typography for ${cat}`);
+    assert.equal(info.variants.A.variant, 'A');
+    assert.equal(info.variants.B.variant, 'B');
+    assert.equal(info.variants.C.variant, 'C');
+  }
+
+  const playgroundB = resolveMeetTypography('Playground', 'meet-xyz', 'B');
+  assert.equal(playgroundB.variant, 'B');
+  assert.ok(playgroundB.fontFamily.includes('Bebas Neue'));
+
+  assert.equal(getNextTypographyVariant('A'), 'B');
+  assert.equal(getNextTypographyVariant('B'), 'C');
+  assert.equal(getNextTypographyVariant('C'), 'A');
+});
+
+test('getEventCtaCopy returns event-specific, high-converting CTAs without Skin-in-Game jargon', () => {
+  const communityFree = getEventCtaCopy(SAMPLE_MEETS[0]);
+  assert.equal(communityFree.primaryCta, 'Count Me In · Free');
+
+  const contestPaid = getEventCtaCopy(SAMPLE_MEETS[1]);
+  assert.equal(contestPaid.primaryCta, 'Enter the Arena · ₹100');
+  assert.equal(contestPaid.badgeLabel, '₹100 Refundable Entry Pass');
+
+  const cricketTurf = getEventCtaCopy({
+    ...SAMPLE_MEETS[1],
+    category: 'Playground',
+    title: 'Sunday Morning Cricket @ Nehru Stadium',
+    escrowAmount: 100,
+  });
+  assert.equal(cricketTurf.primaryCta, 'Book Turf Spot · ₹100');
+});
+
+test('DEFAULT_RANDOM_PRESETS, formatPresetLabel, pickRandomMeetByPreset, and formatHostDateTimeLabel work as specified', () => {
+  assert.equal(DEFAULT_RANDOM_PRESETS.length, 3);
+  assert.equal(
+    formatPresetLabel(DEFAULT_RANDOM_PRESETS[0]),
+    'Within 5km - Free Meet - Sports Meet'
+  );
+  assert.equal(
+    formatPresetLabel(DEFAULT_RANDOM_PRESETS[1]),
+    'Within 10km - Free Meet - Food Meet'
+  );
+  assert.equal(
+    formatPresetLabel(DEFAULT_RANDOM_PRESETS[2]),
+    'Within 10km - Paid Meet - Shopping Meet'
+  );
+
+  const customPreset = {
+    id: 'p-custom',
+    distanceKm: 15,
+    priceMode: 'paid' as const,
+    category: 'Contest' as const,
+  };
+  assert.equal(
+    formatPresetLabel(customPreset),
+    'Within 15km - Paid Meet - Contest Meet'
+  );
+
+  const matched = pickRandomMeetByPreset(SAMPLE_MEETS, customPreset);
+  assert.equal(matched?.id, 'meet-2');
+
+  assert.equal(
+    formatHostDateTimeLabel('2026-08-26', '18:30'),
+    '6:30pm, 26th Aug'
+  );
+  assert.equal(
+    formatHostDateTimeLabel('2026-09-01', '09:05'),
+    '9:05am, 1st Sep'
+  );
+});
+

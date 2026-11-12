@@ -1,15 +1,24 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import {
   ActiveRoute,
   FeedViewState,
   FilterCriteria,
   GeofenceStatus,
-  MeetCategory,
   MeetItem,
+  ProfileSubTab,
+  RandomMeetPreset,
   UserProfile,
+  VibePaletteId,
 } from '../types/meet';
 import { INITIAL_CHENNAI_MEETS, INITIAL_USER_PROFILE } from '../data/chennaiMeets';
-import { calculateReliabilityScore, filterMeets } from '../utils/meetLogic';
+import { getVibePaletteById, VibePaletteConfig } from '../data/vibePalettes';
+import {
+  calculateReliabilityScore,
+  DEFAULT_RANDOM_PRESETS,
+  filterMeets,
+  formatPresetLabel,
+} from '../utils/meetLogic';
+import { getNextTypographyVariant, resolveMeetTypography } from '../utils/typographyStyles';
 
 interface ToastNotification {
   id: string;
@@ -21,6 +30,10 @@ interface ToastNotification {
 interface MeetContextValue {
   route: ActiveRoute;
   setRoute: (route: ActiveRoute) => void;
+  profileSubTab: ProfileSubTab;
+  setProfileSubTab: (tab: ProfileSubTab) => void;
+  selectedHistoryId: string;
+  setSelectedHistoryId: (id: string) => void;
   meets: MeetItem[];
   filteredMeets: MeetItem[];
   selectedMeet: MeetItem;
@@ -35,6 +48,15 @@ interface MeetContextValue {
   setIsCreateModalOpen: (open: boolean) => void;
   isRandomModalOpen: boolean;
   setIsRandomModalOpen: (open: boolean) => void;
+  randomPresets: RandomMeetPreset[];
+  activeRandomPreset: RandomMeetPreset | null;
+  setActiveRandomPreset: (preset: RandomMeetPreset | null) => void;
+  isRandomPresetsModalOpen: boolean;
+  setIsRandomPresetsModalOpen: (open: boolean) => void;
+  addRandomPreset: (preset: Omit<RandomMeetPreset, 'id'>) => void;
+  updateRandomPreset: (preset: RandomMeetPreset) => void;
+  deleteRandomPreset: (id: string) => void;
+  triggerRandomMeetWithPreset: (preset: RandomMeetPreset) => void;
   feedTab: 'available' | 'upcoming' | 'sponsored';
   setFeedTab: (tab: 'available' | 'upcoming' | 'sponsored') => void;
   filters: FilterCriteria;
@@ -56,6 +78,12 @@ interface MeetContextValue {
   markGuardianVerified: (guardianName: string, guardianPhone: string) => void;
   markPoseVerified: (poseName: string) => void;
   simulateFlakeCredit: () => void;
+  vibePaletteId: VibePaletteId;
+  setVibePaletteId: (id: VibePaletteId) => void;
+  activeVibePalette: VibePaletteConfig;
+  isVibeModalOpen: boolean;
+  setIsVibeModalOpen: (open: boolean) => void;
+  cycleMeetTypographyVariant: (meetId: string) => void;
   toast: ToastNotification | null;
   showToast: (title: string, description?: string, tone?: 'emerald' | 'amber' | 'rose') => void;
 }
@@ -77,6 +105,10 @@ const MeetContext = createContext<MeetContextValue | null>(null);
 
 export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [route, setRoute] = useState<ActiveRoute>('/home');
+  const [profileSubTab, setProfileSubTab] = useState<ProfileSubTab>('track');
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string>(
+    INITIAL_USER_PROFILE.trackRecord.history[0]?.id || 'tr-1'
+  );
   const [meets, setMeets] = useState<MeetItem[]>(INITIAL_CHENNAI_MEETS);
   const [selectedMeetId, setSelectedMeetId] = useState<string>(
     INITIAL_CHENNAI_MEETS[4].id // Sunday Morning Cricket @ Nehru Stadium
@@ -86,13 +118,36 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isRandomModalOpen, setIsRandomModalOpen] = useState<boolean>(false);
+  const [randomPresets, setRandomPresets] = useState<RandomMeetPreset[]>(
+    DEFAULT_RANDOM_PRESETS
+  );
+  const [activeRandomPreset, setActiveRandomPreset] =
+    useState<RandomMeetPreset | null>(DEFAULT_RANDOM_PRESETS[0]);
+  const [isRandomPresetsModalOpen, setIsRandomPresetsModalOpen] =
+    useState<boolean>(false);
   const [feedTab, setFeedTab] = useState<'available' | 'upcoming' | 'sponsored'>('available');
   const [filters, setFilters] = useState<FilterCriteria>(DEFAULT_FILTERS);
   const [user, setUser] = useState<UserProfile>(INITIAL_USER_PROFILE);
   const [feedViewState, setFeedViewState] = useState<FeedViewState>('populated');
   const [geofenceStatus, setGeofenceStatus] = useState<GeofenceStatus>('safe');
   const [isSosModalOpen, setIsSosModalOpen] = useState<boolean>(false);
+  const [vibePaletteId, setVibePaletteId] = useState<VibePaletteId>('light-blue');
+  const [isVibeModalOpen, setIsVibeModalOpen] = useState<boolean>(false);
   const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  const activeVibePalette = useMemo(
+    () => getVibePaletteById(vibePaletteId),
+    [vibePaletteId]
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-vibe-id', activeVibePalette.id);
+    root.setAttribute('data-vibe-light', String(activeVibePalette.isLightMode));
+    Object.entries(activeVibePalette.cssVars).forEach(([key, val]) => {
+      root.style.setProperty(key, val);
+    });
+  }, [activeVibePalette]);
 
   const showToast = (
     title: string,
@@ -221,6 +276,9 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user.trackRecord.missed
     );
 
+    const newHistoryId = `tr-${Date.now()}`;
+    setSelectedHistoryId(newHistoryId);
+
     setUser((prev) => ({
       ...prev,
       reliabilityScore: newReliability,
@@ -231,13 +289,16 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
         joined: newJoinedCount,
         history: [
           {
-            id: `tr-${Date.now()}`,
+            id: newHistoryId,
             dateLabel: '25-08-26',
             timeLabel: target.dateTimeLabel.split(',')[0] || '6:00pm',
             meetTitle: target.title,
             venueName: target.venueName,
+            area: target.area,
+            category: target.category,
             status: 'Joined',
             escrowDelta: target.escrowAmount,
+            coordinates: target.coordinates,
           },
           ...prev.trackRecord.history,
         ],
@@ -289,8 +350,10 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
       joinedByUser: true,
     };
 
+    const newHostHistoryId = `tr-host-${Date.now()}`;
     setMeets((prev) => [createdMeet, ...prev]);
     setSelectedMeetId(newId);
+    setSelectedHistoryId(newHostHistoryId);
     setUser((prev) => ({
       ...prev,
       trackRecord: {
@@ -298,13 +361,16 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created: prev.trackRecord.created + 1,
         history: [
           {
-            id: `tr-host-${Date.now()}`,
+            id: newHostHistoryId,
             dateLabel: '25-08-26',
             timeLabel: createdMeet.dateTimeLabel.split(',')[0] || '7:00pm',
             meetTitle: createdMeet.title,
             venueName: createdMeet.venueName,
+            area: createdMeet.area,
+            category: createdMeet.category,
             status: 'Hosted',
             escrowDelta: 0,
+            coordinates: createdMeet.coordinates,
           },
           ...prev.trackRecord.history,
         ],
@@ -413,11 +479,63 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const cycleMeetTypographyVariant = (meetId: string) => {
+    setMeets((prev) =>
+      prev.map((m) => {
+        if (m.id !== meetId) return m;
+        const currentSpec = resolveMeetTypography(m.category, m.id, m.typographyVariant);
+        const nextVar = getNextTypographyVariant(currentSpec.variant);
+        return { ...m, typographyVariant: nextVar };
+      })
+    );
+  };
+
+  const addRandomPreset = (presetData: Omit<RandomMeetPreset, 'id'>) => {
+    const newPreset: RandomMeetPreset = {
+      ...presetData,
+      id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    };
+    setRandomPresets((prev) => [...prev, newPreset]);
+    showToast(
+      'Random Meet Preset Added',
+      formatPresetLabel(newPreset),
+      'emerald'
+    );
+  };
+
+  const updateRandomPreset = (updated: RandomMeetPreset) => {
+    setRandomPresets((prev) =>
+      prev.map((p) => (p.id === updated.id ? updated : p))
+    );
+    if (activeRandomPreset?.id === updated.id) {
+      setActiveRandomPreset(updated);
+    }
+    showToast(
+      'Random Meet Preset Updated',
+      formatPresetLabel(updated),
+      'emerald'
+    );
+  };
+
+  const deleteRandomPreset = (id: string) => {
+    setRandomPresets((prev) => prev.filter((p) => p.id !== id));
+    showToast('Preset Removed', 'Random Meet preset list updated.', 'amber');
+  };
+
+  const triggerRandomMeetWithPreset = (preset: RandomMeetPreset) => {
+    setActiveRandomPreset(preset);
+    setIsRandomModalOpen(true);
+  };
+
   return (
     <MeetContext.Provider
       value={{
         route,
         setRoute,
+        profileSubTab,
+        setProfileSubTab,
+        selectedHistoryId,
+        setSelectedHistoryId,
         meets,
         filteredMeets,
         selectedMeet,
@@ -432,6 +550,15 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsCreateModalOpen,
         isRandomModalOpen,
         setIsRandomModalOpen,
+        randomPresets,
+        activeRandomPreset,
+        setActiveRandomPreset,
+        isRandomPresetsModalOpen,
+        setIsRandomPresetsModalOpen,
+        addRandomPreset,
+        updateRandomPreset,
+        deleteRandomPreset,
+        triggerRandomMeetWithPreset,
         feedTab,
         setFeedTab,
         filters,
@@ -453,6 +580,12 @@ export const MeetProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markGuardianVerified,
         markPoseVerified,
         simulateFlakeCredit,
+        vibePaletteId,
+        setVibePaletteId,
+        activeVibePalette,
+        isVibeModalOpen,
+        setIsVibeModalOpen,
+        cycleMeetTypographyVariant,
         toast,
         showToast,
       }}
